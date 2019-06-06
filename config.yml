@@ -1,0 +1,4 @@
+deployments:
+  - repository: test
+    branch: dev
+    dir: /var/www/dev.mchyll.no/test
