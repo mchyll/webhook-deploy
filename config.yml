@@ -2,3 +2,4 @@ deployments:
   - repository: test
     branch: dev
     dir: /var/www/dev.mchyll.no/test
+    # TODO: multiple dir mappings from repo to server-dir
