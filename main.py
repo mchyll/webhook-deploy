@@ -22,7 +22,7 @@ def verify_signature(payload: str, signature: str, secret: bytes) -> bool:
     return hmac.compare_digest(expected_signature, signature)
 
 
-def do_deploy(config, id, payload):
+def do_deploy(config, delivery_id, payload):
     # Sequence:
     # Check if repo name is in config
     # Check if pushed ref is branch for that repo in config
@@ -34,9 +34,26 @@ def do_deploy(config, id, payload):
     # Log all of this
     # Store the log and stuff somewhere, identified by the delivery id
     repo_name = payload['repository']['full_name']
-    for deployment in config['deployments']:
-        pass
     pushed_ref = payload['ref']
+    deployment_config = None
+    for deployment in config['deployments']:
+        if deployment['repository'] == repo_name and deployment['branch'] == pushed_ref:
+            deployment_config = deployment
+
+    if deployment_config:
+        pass
+    else:
+        print('No matching config found')
+
+
+def real_do_deploy(delivery_id, repo, ref, config):
+    # Make a temp directory
+    # Clone repo into that directory (user running this webapp must have an ssh key registered on github?)
+    # Build the source code in the cloned repo from a build config
+    # Copy all (or only built files) files to the destination dir in config
+    # Delete temp dir
+    # Log all of this
+    # Store the log and stuff somewhere, identified by the delivery id
     pass
 
 

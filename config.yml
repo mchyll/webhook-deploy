@@ -2,4 +2,8 @@ deployments:
   - repository: test
     branch: dev
     dir: /var/www/dev.mchyll.no/test
+    preBuild: command to run pre build
+    build: command for building the source code
+    postBuild: command to run post build
+
     # TODO: multiple dir mappings from repo to server-dir
