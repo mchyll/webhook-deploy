@@ -1,8 +1,16 @@
 import os
 import yaml
 import hmac
-import time
-import multiprocessing as mp
+import logging
+
+
+log = logging.getLogger('webhook-deploy')
+
+
+class DeploymentJob:
+    def __init__(self, id, payload):
+        self.id = id
+        self.payload = payload
 
 
 def load_secret() -> bytes:
@@ -22,10 +30,7 @@ def verify_signature(payload: str, signature: str, secret: bytes) -> bool:
     return hmac.compare_digest(expected_signature, signature)
 
 
-def do_deploy(config, delivery_id, payload):
-    # Sequence:
-    # Check if repo name is in config
-    # Check if pushed ref is branch for that repo in config
+def run_deployment_job(job: DeploymentJob):
     # Make a temp directory
     # Clone repo into that directory (user running this webapp must have an ssh key registered on github?)
     # Build the source code in the cloned repo from a build config
@@ -33,28 +38,20 @@ def do_deploy(config, delivery_id, payload):
     # Delete temp dir
     # Log all of this
     # Store the log and stuff somewhere, identified by the delivery id
-    repo_name = payload['repository']['full_name']
-    pushed_ref = payload['ref']
-    deployment_config = None
-    for deployment in config['deployments']:
-        if deployment['repository'] == repo_name and deployment['branch'] == pushed_ref:
-            deployment_config = deployment
 
-    if deployment_config:
-        pass
+    repo_name = job.payload['repository']['full_name']
+    pushed_ref = job.payload['ref']
+    log.debug(f'run_deployment_job: repo_name {repo_name}, pushed_ref {pushed_ref}')
+
+    # TODO: check real repo names and pushed ref name format
+    if repo_name == 'Kvark' and pushed_ref == 'production':
+        log.info('Running deployment for Kvark')
+
+    elif repo_name == 'API' and pushed_ref == 'production':
+        log.info('Running deployment for API')
+
     else:
-        print('No matching config found')
-
-
-def real_do_deploy(delivery_id, repo, ref, config):
-    # Make a temp directory
-    # Clone repo into that directory (user running this webapp must have an ssh key registered on github?)
-    # Build the source code in the cloned repo from a build config
-    # Copy all (or only built files) files to the destination dir in config
-    # Delete temp dir
-    # Log all of this
-    # Store the log and stuff somewhere, identified by the delivery id
-    pass
+        log.info(f'Delivery {job.id} skipped, not configured for this repo/ref')
 
 
 if __name__ == '__main__':
