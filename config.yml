@@ -1,9 +1,13 @@
-deployments:
-  - repository: test
-    branch: dev
-    dir: /var/www/dev.mchyll.no/test
-    preBuild: command to run pre build
-    build: command for building the source code
-    postBuild: command to run post build
+serverPort: 8899
 
-    # TODO: multiple dir mappings from repo to server-dir
+deployments:
+  - name: Kvark
+    repository: TIHLDE/Kvark
+    ref: refs/heads/production
+    # deploymentScript: deployment-scripts/kvark.bash
+    deploymentScript: deployment-scripts/dummy.bash
+
+  - name: API
+    repository: TIHLDE/API
+    ref: refs/heads/production
+    deploymentScript: deployment-scripts/API.bash

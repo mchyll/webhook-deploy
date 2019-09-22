@@ -1,0 +1,10 @@
+[Unit]
+Description=Webhook Deploy: Continuous deployment with GitHub Webhooks
+After=network.target
+
+[Service]
+WorkingDirectory=/usr/local/bin/webhook-deploy
+ExecStart=/usr/bin/python3 /usr/local/bin/webhook-deploy/server.py
+
+[Install]
+WantedBy=multi-user.target
