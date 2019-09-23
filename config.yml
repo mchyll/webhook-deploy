@@ -1,12 +1,7 @@
 serverPort: 8899
 
 deployments:
-  - name: Web frontend Kvark
-    repository: tihlde/Kvark
+  - name: Sample deployment specification
+    repository: mchyll/webhook-deploy
     ref: refs/heads/production
-    deploymentScript: deployment-scripts/kvark.bash
-
-  - name: Web API
-    repository: tihlde/API
-    ref: refs/heads/production
-    deploymentScript: deployment-scripts/API.bash
+    deploymentScript: deployment-scripts/example.bash

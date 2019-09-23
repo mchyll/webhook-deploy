@@ -9,14 +9,15 @@ import queue
 
 wd = WebhookDeploy()
 
-__stdout_hander = logging.StreamHandler(sys.stdout)
-__formatter = logging.Formatter('%(name)s: [%(levelname)s] %(message)s')
-__stdout_hander.setFormatter(__formatter)
-logging.getLogger().addHandler(__stdout_hander)
+log_stdout_hander = logging.StreamHandler(sys.stdout)
+log_formatter = logging.Formatter('%(name)s: [%(levelname)s] %(message)s')
+log_stdout_hander.setFormatter(log_formatter)
+logging.getLogger().addHandler(log_stdout_hander)
 log = logging.getLogger('webhook-deploy')
-log.setLevel(logging.DEBUG)
+log.setLevel(logging.INFO)
 
-__job_queue = queue.Queue()
+job_queue = queue.Queue()
+worker_running = True
 
 
 async def github_webhook_handle(req: web.Request) -> web.Response:
@@ -43,7 +44,7 @@ async def github_webhook_handle(req: web.Request) -> web.Response:
 
                 else:
                     log.info(f'Enqueueing job for delivery with id {delivery_id}')
-                    __job_queue.put(DeploymentJob(delivery_id, spec))
+                    job_queue.put(DeploymentJob(delivery_id, spec))
                     return web.Response(status=200, text=f'Delivery accepted and job enqueued.')
 
         else:
@@ -62,10 +63,12 @@ async def github_webhook_handle(req: web.Request) -> web.Response:
 def worker() -> None:
     log.info('Worker started')
 
-    while True:
-        log.debug('Worker waiting for jobs')
-        job = __job_queue.get()
-        run_deployment_job(job)
+    while worker_running:
+        try:
+            job = job_queue.get(timeout=5)
+            run_deployment_job(job)
+        except queue.Empty:
+            pass
 
 
 log.info('Webhook Deploy server starting')
@@ -77,3 +80,7 @@ app = web.Application()
 app.add_routes([web.post('/github-webhook', github_webhook_handle)])
 
 web.run_app(app, port=wd._config['serverPort'], print=None)
+
+log.info('Webhook Deploy server stopping')
+worker_running = False
+worker_thread.join()
