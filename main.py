@@ -26,7 +26,7 @@ class WebhookDeploy:
 
     def _load_config(self) -> dict:
         with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.yml')) as f:
-            return yaml.load(f)
+            return yaml.safe_load(f)
 
     def verify_signature(self, payload: str, signature: str) -> bool:
         payload_bytes = payload.encode('utf-8')
@@ -55,28 +55,3 @@ def run_deployment_job(job: DeploymentJob) -> None:
         log.error(f'Deployment FAILED with error code {result.returncode}')
 
     log.info(f'Output from deployment script saved in {log_file_path}')
-
-
-if __name__ == '__main__':
-    wc = WebhookDeploy()
-    payload = \
-'''{
-  "ref": "refs/heads/production",
-  "repository": {
-    "full_name": "TIHLDE/Kvark"
-  }
-}'''
-    payload_bytes = payload.encode('utf-8')
-    digest = hmac.new(wc._secret, payload_bytes, 'sha1')
-    print('sha1=' + digest.hexdigest())
-
-    # secret = load_secret()
-    # print(verify_signature('testæøå', 'lol', secret))
-
-    # f = open('testlol-out.txt', 'w+')
-    # result = subprocess.run(['bash', 'testlol.bash'], encoding='utf-8',
-    #                         stdout=f, stderr=subprocess.STDOUT)
-    # # print(result)
-    # print(f'return code: {result.returncode}')
-    # print(f'stdout: """{result.stdout}"""')
-    # # print(result.stderr)

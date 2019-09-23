@@ -10,7 +10,7 @@ import queue
 wd = WebhookDeploy()
 
 __stdout_hander = logging.StreamHandler(sys.stdout)
-__formatter = logging.Formatter('%(asctime)s %(name)s: [%(levelname)s] %(message)s')
+__formatter = logging.Formatter('%(name)s: [%(levelname)s] %(message)s')
 __stdout_hander.setFormatter(__formatter)
 logging.getLogger().addHandler(__stdout_hander)
 log = logging.getLogger('webhook-deploy')
@@ -29,7 +29,7 @@ async def github_webhook_handle(req: web.Request) -> web.Response:
         if wd.verify_signature(payload, signature):
             if event_type == 'ping':
                 log.info('Got ping event')
-                return web.Response(status=204)
+                return web.Response(status=200)
 
             elif event_type == 'push':
                 payload_dict = json.loads(payload)
@@ -38,7 +38,7 @@ async def github_webhook_handle(req: web.Request) -> web.Response:
                 spec = wd.get_deployment_specification(repo_name, pushed_ref)
 
                 if spec is None:
-                    log.info(f'Delivery {delivery_id} skipped, not configured for this repo/ref ({repo_name} {pushed_ref})')
+                    log.info(f'Delivery {delivery_id} skipped, not configured for repo/ref {repo_name} {pushed_ref}')
                     return web.Response(status=404, text=f'Delivery skipped, not configured for this repo/ref.')
 
                 else:
@@ -65,11 +65,7 @@ def worker() -> None:
     while True:
         log.debug('Worker waiting for jobs')
         job = __job_queue.get()
-        log.debug(f'Worker got job {job}')
-
         run_deployment_job(job)
-
-        log.debug('Worker done with job')
 
 
 log.info('Webhook Deploy server starting')
@@ -80,4 +76,4 @@ worker_thread.start()
 app = web.Application()
 app.add_routes([web.post('/github-webhook', github_webhook_handle)])
 
-web.run_app(app, port=wd._config['serverPort'])
+web.run_app(app, port=wd._config['serverPort'], print=None)

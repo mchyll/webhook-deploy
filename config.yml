@@ -1,13 +1,12 @@
 serverPort: 8899
 
 deployments:
-  - name: Kvark
-    repository: TIHLDE/Kvark
+  - name: Web frontend Kvark
+    repository: tihlde/Kvark
     ref: refs/heads/production
-    # deploymentScript: deployment-scripts/kvark.bash
-    deploymentScript: deployment-scripts/dummy.bash
+    deploymentScript: deployment-scripts/kvark.bash
 
-  - name: API
-    repository: TIHLDE/API
+  - name: Web API
+    repository: tihlde/API
     ref: refs/heads/production
     deploymentScript: deployment-scripts/API.bash
