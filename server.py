@@ -29,21 +29,29 @@ async def github_webhook_handle(req: web.Request) -> web.Response:
 
         if wd.verify_signature(payload, signature):
             if event_type == 'ping':
-                log.info('Got ping event')
+                log.debug('Got ping event')
                 return web.Response(status=200)
 
             elif event_type == 'push':
                 payload_dict = json.loads(payload)
                 repo_name = payload_dict['repository']['full_name']
                 pushed_ref = payload_dict['ref']
+
+                log.debug(f'Got delivery {delivery_id} for push to repository {repo_name} and ref {pushed_ref}')
+
+                if not wd.has_repository_specification(repo_name):
+                    log.debug(f'Delivery {delivery_id} rejected, not configured for this repository')
+                    return web.Response(status=404,
+                                        text=f'Delivery rejected due to not being configured for this repository.')
+
                 spec = wd.get_deployment_specification(repo_name, pushed_ref)
 
                 if spec is None:
-                    log.info(f'Delivery {delivery_id} skipped, not configured for repo/ref {repo_name} {pushed_ref}')
-                    return web.Response(status=404, text=f'Delivery skipped, not configured for this repo/ref.')
-
+                    log.debug(f'Delivery {delivery_id} skipped, not configured for this ref')
+                    return web.Response(status=200,
+                                        text=f'Delivery OK, but skipped due to not being configured for this ref.')
                 else:
-                    log.info(f'Enqueueing job for delivery with id {delivery_id}')
+                    log.info(f'Got push event to {repo_name} {pushed_ref}, enqueueing job for delivery {delivery_id}')
                     job_queue.put(DeploymentJob(delivery_id, spec))
                     return web.Response(status=200, text=f'Delivery accepted and job enqueued.')
 

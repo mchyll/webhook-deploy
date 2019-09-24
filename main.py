@@ -34,6 +34,9 @@ class WebhookDeploy:
         expected_signature = 'sha1=' + digest.hexdigest()
         return hmac.compare_digest(expected_signature, signature)
 
+    def has_repository_specification(self, repository: str) -> bool:
+        return any(d['repository'] == repository for d in self._config['deployments'])
+
     def get_deployment_specification(self, repository: str, ref: str) -> Optional[dict]:
         return next((d for d in self._config['deployments']
                      if d['repository'] == repository and d['ref'] == ref), None)
