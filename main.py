@@ -3,10 +3,25 @@ import yaml
 import hmac
 import logging
 import subprocess
-from typing import Optional
+from typing import Optional, List
 
 
 log = logging.getLogger('webhook-deploy')
+
+
+class DeploymentSpecification:
+    def __init__(self, name: str, repository: str, ref: str, deployment_script: str):
+        self.name = name
+        self.repository = repository
+        self.ref = ref
+        self.deployment_script = deployment_script
+
+
+class Config:
+    def __init__(self, server_port: int, temp_dir: str, deployment_specifications: List[DeploymentSpecification]):
+        self.server_port = server_port
+        self.temp_dir = temp_dir
+        self.deployment_specifications = deployment_specifications
 
 
 class DeploymentJob:
@@ -16,17 +31,9 @@ class DeploymentJob:
 
 
 class WebhookDeploy:
-    def __init__(self):
-        self._secret = self._load_secret()
-        self._config = self._load_config()
-
-    def _load_secret(self) -> bytes:
-        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'secret.txt')) as f:
-            return f.readline().strip().encode('utf-8')
-
-    def _load_config(self) -> dict:
-        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.yml')) as f:
-            return yaml.safe_load(f)
+    def __init__(self, config, secret):
+        self._secret = secret
+        self._config = config
 
     def verify_signature(self, payload: str, signature: str) -> bool:
         payload_bytes = payload.encode('utf-8')
@@ -35,14 +42,40 @@ class WebhookDeploy:
         return hmac.compare_digest(expected_signature, signature)
 
     def has_repository_specification(self, repository: str) -> bool:
-        return any(d['repository'] == repository for d in self._config['deployments'])
+        return any(d.repository == repository for d in self._config.deployment_specifications)
 
-    def get_deployment_specification(self, repository: str, ref: str) -> Optional[dict]:
+    def get_deployment_specification(self, repository: str, ref: str) -> Optional[DeploymentSpecification]:
         return next((d for d in self._config['deployments']
                      if d['repository'] == repository and d['ref'] == ref), None)
 
 
-def run_deployment_job(job: DeploymentJob) -> None:
+def load_secret(path=None) -> bytes:
+    if path is None:
+        path = os.path.join(os.path.dirname(
+            os.path.abspath(__file__)), 'secret.txt')
+
+    with open(path) as f:
+        return f.readline().strip().encode('utf-8')
+
+
+def load_config(path=None) -> Config:
+    if path is None:
+        path = os.path.join(os.path.dirname(
+            os.path.abspath(__file__)), 'config.yml')
+
+    with open(path) as f:
+        y = yaml.safe_load(f)
+        conf = Config(server_port=y['serverPort'],
+                      temp_dir=y['tempDir'],
+                      deployment_specifications=[])
+        for spec in y['deployments']:
+            conf.deployment_specifications.append(DeploymentSpecification(
+                name=spec['name'], repository=spec['repository'],
+                ref=spec['ref'], deployment_script=spec['deployment_script']))
+        return conf
+
+
+def run_deployment_job(job: DeploymentJob, config: Config) -> None:
     log.info('Running deployment for ' + job.specification['name'])
 
     log_file_path = f'/var/log/webhook-deployments/{job.id}.log'

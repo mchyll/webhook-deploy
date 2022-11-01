@@ -1,4 +1,4 @@
-from main import WebhookDeploy, DeploymentJob, run_deployment_job
+from main import WebhookDeploy, DeploymentJob, run_deployment_job, load_config, load_secret
 from aiohttp import web
 import json
 import logging
@@ -7,7 +7,9 @@ import threading
 import queue
 
 
-wd = WebhookDeploy()
+config = load_config()
+secret = load_secret()
+wd = WebhookDeploy(config, secret)
 
 log_stdout_hander = logging.StreamHandler(sys.stdout)
 log_formatter = logging.Formatter('%(name)s: [%(levelname)s] %(message)s')
@@ -68,26 +70,26 @@ async def github_webhook_handle(req: web.Request) -> web.Response:
         return web.Response(status=400)
 
 
-def worker() -> None:
+def worker(config: Config) -> None:
     log.info('Worker started')
 
     while worker_running:
         try:
             job = job_queue.get(timeout=5)
-            run_deployment_job(job)
+            run_deployment_job(job, config)
         except queue.Empty:
             pass
 
 
 log.info('Webhook Deploy server starting')
 
-worker_thread = threading.Thread(target=worker, name='DeploymentWorkerThread')
+worker_thread = threading.Thread(target=worker, args=(config,), name='DeploymentWorkerThread')
 worker_thread.start()
 
 app = web.Application()
 app.add_routes([web.post('/github-webhook', github_webhook_handle)])
 
-web.run_app(app, port=wd._config['serverPort'], print=None)
+web.run_app(app, port=config.server_port, print=None)
 
 log.info('Webhook Deploy server stopping')
 worker_running = False

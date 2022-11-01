@@ -1,4 +1,5 @@
 serverPort: 8899
+tempDir: /var/temp/webhook-deploy
 
 deployments:
   - name: Sample deployment specification
